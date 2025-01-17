@@ -1,8 +1,10 @@
 # ha-map-card-plugin-bom-radar
 
-A plugin for [ha-map-card](https://github.com/nathan-gs/ha-map-card) that displays the Australian BoM (Bureau of Meteorology) radar data.
+A plugin for [ha-map-card](https://github.com/nathan-gs/ha-map-card) that displays the Australian BoM (Bureau of Meteorology) radar precipitation data.
 
 > If you'd like to support my work, you can [donate on ko-fi](https://ko-fi.com/bezmi) or [github sponsors](https://github.com/sponsors/bezmi).
+
+![an example of the map with rain radar shown](/images/screenshot.png)
 
 ## Installation
 Install `ha-map-card`. For now, this only works with an experimental version that has plugin support: https://github.com/nathan-gs/ha-map-card/pull/113
