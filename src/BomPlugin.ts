@@ -5,10 +5,8 @@ import { initLeafletMaplibreGL } from './leaflet-maplibre-gl.js'
 import 'maplibre-gl/dist/maplibre-gl.css';
 import * as labelStyle from './labelStyle.json';
 
-const LL = (window as any).L;
 
-
-export default function(pluginBase: any) {
+export default function(LL: any, pluginBase: any) {
   initLeafletMaplibreGL(LL, maplibregl)
 
 
@@ -24,6 +22,12 @@ export default function(pluginBase: any) {
     private radarZIndex: number;
     private labelsZIndex: number;
     private cycleTimeoutHandler: number | undefined = undefined;
+    private labelsLayerGroup: L.LayerGroup;
+    private radarLayerGroup: L.LayerGroup;
+    private gl_map: maplibregl.Map | undefined = undefined;
+    private gl: L.MaplibreGL | undefined = undefined;
+    private gl1: L.MaplibreGL | undefined = undefined;
+    private randomId: number = Math.floor(Math.random() * 1000);
 
 
     constructor(map: L.Map, name: string, options: object) {
@@ -34,8 +38,24 @@ export default function(pluginBase: any) {
       this.updateFetchInterval = this.options["fetch_interval"];
       this.map.createPane('radar');
       this.map.createPane('labels');
+      this.map.on('remove', () => {
+        this.log("map removed");
+
+      })
+      this.labelsLayerGroup = LL.layerGroup();
+      this.labelsLayerGroup.addTo(this.map);
+      this.labelsLayerGroup.setZIndex(this.labelsZIndex);
+      this.radarLayerGroup = LL.layerGroup();
+      this.radarLayerGroup.addTo(this.map);
+      this.radarLayerGroup.setZIndex(this.radarZIndex);
+      let overlays = { "Labels": this.labelsLayerGroup, "Rainfall": this.radarLayerGroup };
+      this.layerControl = LL.control.layers(null, overlays).addTo(this.map);
 
       console.debug("[HaMapCard] [BomPlugin] Successfully invoked constructor of plugin:", this.name, "with options:", this.options);
+    }
+
+    log(...messages: any[]) {
+      console.log(`[HaMapCard] [BomPlugin ${this.randomId}]`, ...messages);
     }
 
     createDateTextBox(map?: L.Map): L.Control {
@@ -60,82 +80,92 @@ export default function(pluginBase: any) {
     };
 
 
-    init() {
-      this.initGL();
-      console.debug("[HaMapCard] [BomPlugin] Called init() of plugin:", this.name);
-      this.textbox = this.createDateTextBox(this.map);
-      this.map.on('overlayremove', this.handleOverlayRemove);
-      this.map.on('overlayadd', this.handleOverlayAdd);
-    }
-    initGL() {
-      if (this.gl_map === undefined) {
-
-        let gl1 = LL.maplibreGL({
-          style: labelStyle,
-          pane: 'labels',
-        });
-
-        this.labelsLayerGroup = LL.layerGroup([gl1]);
-        this.labelsLayerGroup.addTo(this.map);
-        this.labelsLayerGroup.setZIndex(this.labelsZIndex);
-
-        let gl = LL.maplibreGL({
-          style: { version: 8, sources: {}, layers: [] },
-          pane: 'radar',
-        });
-
-        this.radarLayerGroup = LL.layerGroup([gl]);
-        this.radarLayerGroup.addTo(this.map);
-        this.gl_map = gl.getMaplibreMap();
-        this.gl_map.once('load').then(() => {
-          this.radarLayerGroup.setZIndex(this.radarZIndex);
-          let overlays = { "Labels": this.labelsLayerGroup, "Rainfall": this.radarLayerGroup };
-          this.layerControl = LL.control.layers(null, overlays).addTo(this.map);
-        });
-
-      }
-
-    }
-
-    async renderMap() {
-      console.debug("[HaMapCard] [BomPlugin] Called render() of Plugin:", this.name);
-      await this.updateAndStartCycle();
-      this.fetchIntervalHandler = setInterval(() => { this.updateAndStartCycle(); }, this.updateFetchInterval)
-    }
-    startUpdateTimer() {
+    async init() {
     }
 
     handleOverlayRemove = (e: L.LayersControlEvent) => {
+      console.log("called handleOverlayRemove");
+      console.log("radarLayerGroup layers: ", this.radarLayerGroup.getLayers());
+      console.log("radarLayerGroup layers: ", this.labelsLayerGroup.getLayers());
       if (e.name === "Rainfall") {
-        console.log("stopping radar service");
+        this.log("stopping radar service");
         clearTimeout(this.cycleTimeoutHandler);
         clearInterval(this.fetchIntervalHandler);
         this.rainSourceLayerMap.clear();
+        this.rainLayers = [];
+        // this.gl_map = undefined;
+        // this.radarLayerGroup.clearLayers();
+        this.currentIndex = 0;
+        console.log(this.radarLayerGroup, "radarlayersgroup");
       }
     }
 
     handleOverlayAdd = (e: L.LayersControlEvent) => {
+      console.log("called handleOverlayAdd");
       if (e.name === "Rainfall") {
-        console.log("starting radar service");
-        this.fetchIntervalHandler = setInterval(() => { this.updateAndStartCycle(); }, this.updateFetchInterval);
+        this.log("starting radar service");
+        console.log(this.gl_map);
+        this.initGL();
+        console.log(this.radarLayerGroup, "radarlayersgroup");
+        this.updateAndStartCycle();
       }
+
     }
+
+
+    async initGL() {
+      this.log("called initGL");
+
+      this.gl_map = this.gl!.getMaplibreMap();
+      console.log(this.gl_map);
+      await this.gl_map.once('load');
+    }
+
+    async renderMap() {
+      console.error("renderMap called");
+      this.gl1 = LL.maplibreGL({
+        style: labelStyle,
+        pane: 'labels',
+      });
+      this.labelsLayerGroup.addLayer(this.gl1 as L.Layer);
+      this.gl = LL.maplibreGL({
+        style: { version: 8, sources: {}, layers: [] },
+        pane: 'radar',
+      });
+      this.radarLayerGroup.addLayer(this.gl as L.Layer);
+      await this.initGL();
+      this.map.on('overlayremove', this.handleOverlayRemove);
+      this.map.on('overlayadd', this.handleOverlayAdd);
+      // this.map.on('overlayremove', this.handleOverlayRemove);
+      // this.map.on('overlayadd', this.handleOverlayAdd);
+      this.textbox = this.createDateTextBox(this.map);
+      console.debug("[HaMapCard] [BomPlugin] Called render() of Plugin:", this.name);
+      await this.updateAndStartCycle();
+    }
+
     async updateAndStartCycle() {
       if (this.gl_map === undefined) {
-        this.initGL();
+        await this.initGL();
+        await this.waitForGLLoaded();
       }
-      console.log("0", this);
 
-      console.log("glmap: m", this.gl_map)
-      console.log(this.map);
+      if (!this.gl_map?.loaded()) {
+        await this.waitForGLLoaded();
+      }
+      this.log("0", this);
+
+      this.log("glmap: m", this.gl_map, this.gl_map?.style);
+      this.log(this.map);
       this.updateActive = true
 
+      this.log("rainSourceLayerMap: ", this.rainSourceLayerMap);
+      this.log("rainLayers: ", this.rainLayers);
       this.rainSourceLayerMap.forEach((rainLayers, sourceId) => {
-        console.log("1", this);
-        console.log(rainLayers, sourceId);
+        this.log("1", this);
+        this.log(rainLayers, sourceId);
         rainLayers.forEach((rainLayer) => {
-          console.log("2", this);
           if (this.gl_map !== undefined) {
+            this.log(this.gl_map, this.gl_map.style, "removing layer: ", rainLayer.id, "randomId:", this.randomId, this.cycleTimeoutHandler, this.fetchIntervalHandler);
             this.gl_map.removeLayer(rainLayer.id);
           }
         });
@@ -147,13 +177,14 @@ export default function(pluginBase: any) {
       });
 
       const rainData = await this.fetchRainData();
-      console.log("3", this);
+      this.log("3", this);
       await this.loadRainLayers(rainData);
-      // console.log("rainLayers:", this.rainLayers);
+      // this.log("rainLayers:", this.rainLayers);
 
       this.updateActive = false;
 
       const currLayer = this.rainLayers[this.currentIndex];
+      this.log("currLayer: ", currLayer);
 
       this.setRainLayerOpacity(currLayer.id, 0.8);
       this.textbox.updateText(currLayer.time.toLocaleString());
@@ -161,22 +192,24 @@ export default function(pluginBase: any) {
       this.cycleTimeoutHandler = setTimeout(() => {
         this.cycleRainLayer();
       }, this.cycleTimeInterval);
+
+      this.fetchIntervalHandler = setTimeout(() => { this.updateAndStartCycle(); }, this.updateFetchInterval)
     }
 
 
     setRainLayerOpacity(id: RainLayerId, opacity: number) {
-      if (this.gl_map.getLayer(id) === undefined) {
-        // console.log("Can't set opacity of layer: ", id, "doesn't exist on map!");
+      if (this.gl_map?.getLayer(id) === undefined) {
+        this.log("Can't set opacity of layer: ", id, "doesn't exist on map!");
         return;
       }
       this.gl_map.setPaintProperty(id, 'fill-opacity', opacity);
     }
 
     cycleRainLayer() {
-      // console.log(this.rainLayers);
+      // this.log(this.rainLayers, this.currentIndex);
       if (this.rainLayers.length == 0) return;
       if (this.updateActive) {
-        // console.log("aborting, data is locked");
+        // this.log("aborting, data is locked");
         clearTimeout(this.cycleTimeoutHandler);
         return;
       }
@@ -192,10 +225,6 @@ export default function(pluginBase: any) {
       this.cycleTimeoutHandler = setTimeout(() => {
         this.cycleRainLayer()
       }, this.cycleTimeInterval);
-
-    }
-
-    update() {
     }
 
     async fetchRainData(): Promise<RainData[]> {
@@ -216,16 +245,26 @@ export default function(pluginBase: any) {
       return new Promise((resolve) => {
         const onSourceDataEvent = (e: maplibregl.MapSourceDataEvent) => {
           if (e.sourceId === sourceId && e.isSourceLoaded) {
-            this.gl_map.off('sourcedata', onSourceDataEvent)
+            this.gl_map?.off('sourcedata', onSourceDataEvent)
             resolve();
           }
         }
-        this.gl_map.on('sourcedata', onSourceDataEvent);
+        this.gl_map?.on('sourcedata', onSourceDataEvent);
+      });
+    }
+
+    waitForGLLoaded(): Promise<void> {
+      return new Promise((resolve) => {
+        const bomOnGLMapLoad = (e: maplibregl.MapLibreEvent) => {
+          this.gl_map?.off('load', bomOnGLMapLoad)
+          resolve();
+        }
+        this.gl_map?.on('load', bomOnGLMapLoad);
       });
     }
 
     async loadRainLayers(rainData: RainData[]) {
-      console.log("4", this);
+      this.log("4", this);
       const rainLayers: RainLayer[] = [];
       for (const entry in rainData) {
         let source_timestamp = rainData[entry].time;
@@ -239,14 +278,14 @@ export default function(pluginBase: any) {
         const access_token = 'pk.eyJ1IjoiYm9tLWRjLXByb2QiLCJhIjoiY2w4dHA5ZHE3MDlsejN3bnFwZW5vZ2xxdyJ9.KQjQkhGAu78U2Lu5Rxxh4w'
         const source_url = 'https://api.mapbox.com/v4/' + source_id + '.json?secure&access_token=' + access_token;
 
-        if (this.gl_map.getSource(source_id) === undefined) {
-          this.gl_map.addSource(source_id, { type: 'vector', url: source_url })
+        if (this.gl_map?.getSource(source_id) === undefined) {
+          this.gl_map?.addSource(source_id, { type: 'vector', url: source_url })
           await this.waitForSourceLoaded(source_id);
         }
 
 
-        if (this.gl_map.getLayer(source_layer_name) === undefined) {
-          this.gl_map.addLayer({
+        if (this.gl_map?.getLayer(source_layer_name) === undefined) {
+          this.gl_map?.addLayer({
             'id': source_layer_name, // Layer ID
             'type': 'fill',
             'source': source_id,
@@ -316,7 +355,12 @@ export default function(pluginBase: any) {
 
     }
 
-
+    destroy() {
+      console.debug("[HaMapCard] [BomPlugin] Called destroy() of plugin:", this.name);
+      clearInterval(this.fetchIntervalHandler);
+      clearTimeout(this.cycleTimeoutHandler);
+    }
 
   }
+
 }
