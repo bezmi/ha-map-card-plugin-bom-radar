@@ -18,7 +18,9 @@ import type * as L from 'leaflet';
 import type { Map as LibreGLMap, MapOptions as LibreGLMapOptions } from 'maplibre-gl';
 
 declare module 'leaflet' {
-    type LeafletMaplibreGLOptions = Omit<LibreGLMapOptions, "container">;
+    type LeafletMaplibreGLOptions = Omit<LibreGLMapOptions, "container"> & {
+        pane?: string;
+    };
 
     class MaplibreGL extends L.Layer {
         constructor(options: LeafletMaplibreGLOptions);

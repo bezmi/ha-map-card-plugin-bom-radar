@@ -1,10 +1,10 @@
 
 export interface RainData {
-  time : string;
+  time: string;
   type: 'observation' | 'nowcast';
   is_duplicated: boolean;
   url: string;
-  layer: {name: string};
+  layer: { name: string };
 }
 
 export type RainSourceLayerMap = Map<RainSourceId, RainLayer[]>
