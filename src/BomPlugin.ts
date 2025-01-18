@@ -10,6 +10,20 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
   initLeafletMaplibreGL(LL, maplibregl)
 
+  class Textbox extends LL.Control {
+    onAdd() {
+      var text = LL.DomUtil.create('div');
+      text.id = 'date-text';
+      text.innerHTML = '';
+      return text;
+    }
+    updateText(text: string) {
+      const container = (this as any as L.Control).getContainer();
+      if (!container) return;
+      container.innerText = text;
+    }
+  }
+
   return class BomPlugin extends pluginBase {
     private rainSourceLayerMap: RainSourceLayerMap = new Map();
     private rainLayers: RainLayer[] = [];
@@ -31,7 +45,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     private radarPane: HTMLElement | undefined;
     private labelsPane: HTMLElement | undefined;
     private layerControl: L.Control.Layers | undefined;
-    private datetimeTextbox: L.Control | undefined = undefined;
+    private datetimeTextbox: Textbox | undefined = undefined;
 
     constructor(map: L.Map, name: string, options: object) {
       super(map, name, options);
@@ -83,25 +97,12 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       leafletStyle += `.leaflet-pane .leaflet-labels-pane { z-index: ${this.labelsZIndex} !important; }`
       leafletStyle += `.leaflet-pane .leaflet-radar-pane { z-index: ${this.radarZIndex} !important; }`
 
-      style.textContent = maplibreglstyles  + leafletStyle;
+      style.textContent = maplibreglstyles + leafletStyle;
     }
 
-    Textbox = LL.Control.extend({
-      onAdd: function() {
-        var text = LL.DomUtil.create('div');
-        text.id = 'date-text';
-        text.innerHTML = '';
-        return text;
-      },
-      updateText: function(text: string) {
-        const container = (this as any as L.Control).getContainer();
-        if (!container) return;
-        container.innerText = text;
-      },
-    });
 
-    createDatetimeTextbox(): L.Control {
-      const textbox = new this.Textbox(
+    createDatetimeTextbox(): Textbox {
+      const textbox = new Textbox(
         { position: 'bottomleft' }).addTo(this.map);
 
       return textbox;
@@ -236,7 +237,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         this.currentIndex++;
       currLayer = this.rainLayers[this.currentIndex];
       this.setRainLayerOpacity(currLayer.id, 0.8);
-      this.datetimeTextbox.updateText(currLayer.time.toLocaleString());
+      this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
       this.cycleTimeoutHandler = setTimeout(() => {
         this.cycleRainLayer()
       }, this.cycleTimeInterval);
