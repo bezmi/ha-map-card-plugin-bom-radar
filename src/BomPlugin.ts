@@ -1,12 +1,13 @@
 import maplibregl from 'maplibre-gl';
 import type L from 'leaflet'
+import type Plugin from './Plugin';
 import { RainData, RainLayerId, RainLayer, RainSourceLayerMap } from './types';
 import { initLeafletMaplibreGL } from './leaflet-maplibre-gl.js'
-import 'maplibre-gl/dist/maplibre-gl.css';
 import * as labelStyle from './labelStyle.json';
+import maplibreglstyles from 'maplibre-gl/dist/maplibre-gl.css';
 
+export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
-export default function(LL: typeof L, pluginBase: any, Logger: any) {
   initLeafletMaplibreGL(LL, maplibregl)
 
   return class BomPlugin extends pluginBase {
@@ -19,21 +20,26 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
     private fetchTimeoutHandler: number | undefined;
     private radarZIndex: number;
     private labelsZIndex: number;
+    private markersZIndex: number;
     private cycleTimeoutHandler: number | undefined = undefined;
     private labelsLayerGroup: L.LayerGroup | undefined;
     private radarLayerGroup: L.LayerGroup = LL.layerGroup();
     private gl_map: maplibregl.Map | undefined = undefined;
     private gl: L.MaplibreGL | undefined = undefined;
     private enableAlternateLabels: boolean = false;
-    private datetimeTextbox: typeof this.Textbox | undefined = undefined;
     private enableLayerControl: boolean = true;
+    private radarPane: HTMLElement | undefined;
+    private labelsPane: HTMLElement | undefined;
+    private layerControl: L.Control.Layers | undefined;
+    private datetimeTextbox: L.Control | undefined = undefined;
 
     constructor(map: L.Map, name: string, options: object) {
-      super(map, name, options)
+      super(map, name, options);
       this.labelsZIndex = this.options["labels_zIndex"] ?? 501;
 
       this.radarZIndex = this.options["radar_zIndex"] ?? 201;
 
+      this.markersZIndex = this.options["markers_zIndex"] ?? 401;
 
       this.cycleTimeInterval = this.options["cycle_interval"] ?? 500;
       this.updateFetchInterval = this.options["fetch_interval"] ?? 60000;
@@ -45,14 +51,12 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
       this.labelsLayerGroup = this.enableAlternateLabels
         ? LL.layerGroup() : undefined
 
-      this.map.createPane('radar');
-      this.map.createPane('labels');
+      this.radarPane = this.map.createPane('radar');
+      this.labelsPane = this.map.createPane('labels');
 
       this.labelsLayerGroup?.addTo(this.map);
       this.radarLayerGroup.addTo(this.map);
 
-      this.labelsLayerGroup?.setZIndex(this.labelsZIndex);
-      this.radarLayerGroup.setZIndex(this.radarZIndex);
 
       this.debug(`Successfully invoked constructor of plugin ${this.name} with options: ${this.options}`);
     }
@@ -61,7 +65,28 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
       Logger.debug(`[HAMapCard][Plugin][${this.name}]`, ...message);
     }
 
-    TextBox = LL.Control.extend({
+    injectStyles() {
+      // Retrieve the map container
+      const container = this.map.getContainer();
+
+      // Check if the styles are already injected
+      if (container.querySelector('style[maplibre-gl-styles]')) return;
+
+      // Create a style element and set its content to the imported CSS
+      const style = LL.DomUtil.create('style', '', container);
+      style.setAttribute('maplibre-gl-styles', 'true');
+
+      // The ha-map-card styling sets the .leaflet-pane z-index to 0 !important
+      // so if we want to change the marker (or any other pane) z-index,
+      // we must use a more specific rule and also the !important flag.
+      let leafletStyle = `.leaflet-pane .leaflet-marker-pane { z-index: ${this.markersZIndex} !important; }`
+      leafletStyle += `.leaflet-pane .leaflet-labels-pane { z-index: ${this.labelsZIndex} !important; }`
+      leafletStyle += `.leaflet-pane .leaflet-radar-pane { z-index: ${this.radarZIndex} !important; }`
+
+      style.textContent = maplibreglstyles  + leafletStyle;
+    }
+
+    Textbox = LL.Control.extend({
       onAdd: function() {
         var text = LL.DomUtil.create('div');
         text.id = 'date-text';
@@ -76,7 +101,7 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
     });
 
     createDatetimeTextbox(): L.Control {
-      const textbox = new this.TextBox(
+      const textbox = new this.Textbox(
         { position: 'bottomleft' }).addTo(this.map);
 
       return textbox;
@@ -103,6 +128,11 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
 
     }
 
+    async init() {
+      this.debug("Injecting styles");
+      this.injectStyles();
+    }
+
     async initGL() {
       this.datetimeTextbox = this.createDatetimeTextbox();
 
@@ -111,6 +141,7 @@ export default function(LL: typeof L, pluginBase: any, Logger: any) {
     }
 
     async renderMap() {
+
       if (this.enableLayerControl === true) {
         this.layerControl = LL.control.layers(
           null,

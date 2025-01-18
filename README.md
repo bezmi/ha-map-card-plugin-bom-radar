@@ -23,31 +23,38 @@ and place it in your homeassistant `www` folder.
 
 ## Configuration
 
-Below is an example Lovelace YAML configuration.
+Below is an example Lovelace YAML configuration that I like to use.
 
 ```yaml
 type: custom:map-card
 x: -25.3744
 y: 133.7751
 zoom: 4
+tile_layer_url: https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png
 plugins:
   - name: bom
     url: /local/bom-plugin.js # if the plugin is the www folder, this is the url to use
     options:
-      cycle_interval: 250
-      fetch_interval: 30000
+      alternate_labels: true
 ```
 - **name**: a name for the plugin instance
 - **url**: location where `bom-plugin.js` can be found. If it's in the `www` folder, then use `local/bom-plugin.js`
 
 ### Plugin configuration
-- **cycle_interval**: Time in milliseconds between radar image frames cycling (default: 250).  
-- **fetch_interval**: Time in milliseconds between each data retrieval from BoM (default: 30000).  
-- **alternate_labels**: `true` to enable alternate labels for place names.
+- **cycle_interval**: (default 250) Time in milliseconds between radar image frames cycling.
+- **fetch_interval**: (default 30000) Time in milliseconds between each data retrieval from BoM.
+- **alternate_labels**: (default `false`) enable alternate labels for place names.
 Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png) if you enable this option.
-- **layer_control**: `true` if you want checkbox to allow enabling/disable the radar overlay.
-- **labels_zIndex**: zIndex property for the labels (doesn't work properly yet).
-- **radar_zIndex**: zIndex property for the radar overlay (doesn't work properly yet).
+- **layer_control**: (default `true`) enable checkbox to allow showing/hiding the radar overlay.
+
+#### z-index
+Setting these integer values in the configuration will alter how the different layers of the map are ordered.
+The lower the value, the lower the layer will be in the stack.
+With the current defaults, the order is radar > markers > labels, which works well.
+For the labels setting to do anything, you must have the `alternate_labels` option set to `true`.
+- **labels_zIndex**: (default 501) zIndex property for the labels
+- **radar_zIndex**: (default 201) zIndex property for the radar overlay
+- **marker_zIndex**: (default 401) zIndex property for the markers that you have on your map
 
 ---
 
