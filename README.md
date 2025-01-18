@@ -50,7 +50,7 @@ Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.c
 #### z-index
 Setting these integer values in the configuration will alter how the different layers of the map are ordered.
 The lower the value, the lower the layer will be in the stack.
-With the current defaults, the order is radar > markers > labels, which works well.
+With the current defaults, the order (lowest to highest) is radar -> markers -> labels, which works well.
 For the labels setting to do anything, you must have the `alternate_labels` option set to `true`.
 - **labels_zIndex**: (default 501) zIndex property for the labels
 - **radar_zIndex**: (default 201) zIndex property for the radar overlay
