@@ -35,6 +35,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     private onUpdate: (value: string | number) => void;
     private data: RainLayer[] = [];
     private targetPosition: number = 18;
+    private resetTimeout: number | undefined;
 
     constructor(map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = []) {
       console.error("creating slider");
@@ -43,6 +44,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
       this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
       this.onUpdate = onUpdate;
+
 
       this.slider = noUiSlider.create(this.sliderElement, {
         start: 18,
@@ -76,16 +78,17 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         this.onUpdate(value);
       });
       this.slider.on('change', (values: (string | number)[]) => {
+        clearTimeout(this.resetTimeout);
         const value = parseFloat(values[0] as string);
         this.targetPosition = Math.round(value);
+        this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
       });
       // On slider 'end' event, trigger the return animation
       // Called after the user finishes dragging the slider handle
       this.slider.on('start', () => {
-        console.error("start");
+        clearTimeout(this.resetTimeout);
         this.slider.off('change');
         this.slider.on('end', (values: (string | number)[]) => {
-          console.error("end");
           const currentValue = values[0] as number;
 
           // No need to move if we're already at the target
@@ -95,32 +98,29 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
           const direction = currentValue < this.targetPosition ? 1 : -1;
 
           // Use setInterval to "step" the slider value until it reaches the target
-          if (direction > 0) {
-            const intervalId = setInterval(() => {
-              console.error("step");
-              let newValue = parseFloat(this.slider.get() as string) + direction * 0.1;
-              console.error(newValue, this.targetPosition, this.slider.get(), direction, parseFloat(this.slider.get() as string) + direction / 10);
+          const intervalId = setInterval(() => {
+            let newValue = parseFloat(this.slider.get() as string) + direction * 0.1;
 
-              // If moving up and we've exceeded the target, or moving down and we've gone below, stop
-              if ((direction > 0 && newValue >= this.targetPosition) ||
-                (direction < 0 && newValue <= this.targetPosition)) {
-                newValue = this.targetPosition; // Clamp to target
-                this.slider.set(newValue);
-                clearInterval(intervalId);
-                  this.slider.off("end");
-                this.slider.on('change', (values: (string | number)[]) => {
-                  const value = parseFloat(values[0] as string);
-                  this.targetPosition = Math.round(value);
-                });
-              } else {
-                this.slider.set(newValue);
-              }
-            }, 1000 / 1000);
-          } else {
-            this.targetPosition = Math.round(currentValue);
-          }
+            // If moving up and we've exceeded the target, or moving down and we've gone below, stop
+            if ((direction > 0 && newValue >= this.targetPosition) ||
+              (direction < 0 && newValue <= this.targetPosition)) {
+              this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
+              newValue = this.targetPosition; // Clamp to target
+              this.slider.set(newValue);
+              clearInterval(intervalId);
+              this.slider.off("end");
+              this.slider.on('change', (values: (string | number)[]) => {
+                clearTimeout(this.resetTimeout);
+                const value = parseFloat(values[0] as string);
+                this.targetPosition = Math.round(value);
+                this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
+              });
+            } else {
+              this.slider.set(newValue);
+            }
+          }, 1000 / 100);
         });
-        // this.slider.off('end');
+        // this.slider.off('end')``;
       });
     }
 
@@ -248,7 +248,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     }
 
     async initGL() {
-      this.datetimeTextbox = this.createDatetimeTextbox();
+    // this.datetimeTextbox = this.createDatetimeTextbox();
 
       this.gl_map = this.gl?.getMaplibreMap();
       await this.gl_map?.once('load');
