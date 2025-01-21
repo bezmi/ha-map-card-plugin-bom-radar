@@ -7,7 +7,7 @@ import postcss from 'rollup-plugin-postcss';
 export default {
   input: 'src/index.ts',
   output: {
-    file: 'dist/bom-plugin.js',
+    file: 'dist/bom-plugin1.js',
     format: 'esm',
   },
   plugins: [

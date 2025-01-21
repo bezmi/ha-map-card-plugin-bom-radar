@@ -26,6 +26,7 @@
   "dependencies": {
     "@maplibre/maplibre-gl-leaflet": "^0.0.22",
     "@types/maplibre-gl": "^1.13.2",
-    "maplibre-gl": "^4.7.1"
+    "maplibre-gl": "^4.7.1",
+    "nouislider": "^15.8.1"
   }
 }

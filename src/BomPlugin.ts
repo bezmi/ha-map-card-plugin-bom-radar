@@ -1,10 +1,15 @@
+import type L from 'leaflet';
 import maplibregl from 'maplibre-gl';
-import type L from 'leaflet'
-import type Plugin from './Plugin';
-import { RainData, RainLayerId, RainLayer, RainSourceLayerMap } from './types';
-import { initLeafletMaplibreGL } from './leaflet-maplibre-gl.js'
-import * as labelStyle from './labelStyle.json';
 import maplibreglstyles from 'maplibre-gl/dist/maplibre-gl.css';
+import noUiSlider from 'nouislider';
+import type { API } from 'nouislider';
+import { PipsMode } from 'nouislider';
+import noUiSliderStyles from 'nouislider/dist/nouislider.css';
+import * as labelStyle from './labelStyle.json';
+import { initLeafletMaplibreGL } from './leaflet-maplibre-gl.js';
+import type Plugin from './Plugin';
+import styles from './styles.css';
+import { RainData, RainLayer, RainLayerId, RainSourceLayerMap } from './types';
 
 export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
@@ -21,6 +26,114 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       const container = (this as any as L.Control).getContainer();
       if (!container) return;
       container.innerText = text;
+    }
+  }
+
+  class BomSlider {
+    public slider: API;
+    private sliderElement: HTMLElement;
+    private onUpdate: (value: string | number) => void;
+    private data: RainLayer[] = [];
+    private targetPosition: number = 18;
+
+    constructor(map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = []) {
+      console.error("creating slider");
+      const mapContainer = map.getContainer();
+      const sliderContainer = LL.DomUtil.create('div', 'slider-wrapper', mapContainer);
+      this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
+      this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
+      this.onUpdate = onUpdate;
+
+      this.slider = noUiSlider.create(this.sliderElement, {
+        start: 18,
+        connect: false,
+        step: 0.1,
+        range: {
+          'min': 0,
+          'max': range
+        },
+        pips: {
+          mode: PipsMode.Values,
+          values: [0, range],
+          density: 4,
+          stepped: true,
+        },
+        tooltips: [
+          {
+            to: (value: number) => {
+              if (this.data.length == 0) return '';
+              return this.data[Math.floor(value)].time.toLocaleTimeString();
+            }
+          },
+        ],
+        animate: false,
+      });
+
+
+      // Attach slider update event
+      this.slider.on('update', (values: (string | number)[]) => {
+        const value = values[0];
+        this.onUpdate(value);
+      });
+      this.slider.on('change', (values: (string | number)[]) => {
+        const value = parseFloat(values[0] as string);
+        this.targetPosition = Math.round(value);
+      });
+      // On slider 'end' event, trigger the return animation
+      // Called after the user finishes dragging the slider handle
+      this.slider.on('start', () => {
+        console.error("start");
+        this.slider.off('change');
+        this.slider.on('end', (values: (string | number)[]) => {
+          console.error("end");
+          const currentValue = values[0] as number;
+
+          // No need to move if we're already at the target
+          if (currentValue === this.targetPosition) return;
+
+          // Determine the direction to move (increment or decrement)
+          const direction = currentValue < this.targetPosition ? 1 : -1;
+
+          // Use setInterval to "step" the slider value until it reaches the target
+          if (direction > 0) {
+            const intervalId = setInterval(() => {
+              console.error("step");
+              let newValue = parseFloat(this.slider.get() as string) + direction * 0.1;
+              console.error(newValue, this.targetPosition, this.slider.get(), direction, parseFloat(this.slider.get() as string) + direction / 10);
+
+              // If moving up and we've exceeded the target, or moving down and we've gone below, stop
+              if ((direction > 0 && newValue >= this.targetPosition) ||
+                (direction < 0 && newValue <= this.targetPosition)) {
+                newValue = this.targetPosition; // Clamp to target
+                this.slider.set(newValue);
+                clearInterval(intervalId);
+                  this.slider.off("end");
+                this.slider.on('change', (values: (string | number)[]) => {
+                  const value = parseFloat(values[0] as string);
+                  this.targetPosition = Math.round(value);
+                });
+              } else {
+                this.slider.set(newValue);
+              }
+            }, 1000 / 1000);
+          } else {
+            this.targetPosition = Math.round(currentValue);
+          }
+        });
+        // this.slider.off('end');
+      });
+    }
+
+    setData(data: RainLayer[]) {
+      this.data = data;
+      console.error("DATA", data);
+    }
+
+
+
+    destroy() {
+      console.error("removing slider");
+      this.sliderElement.remove();
     }
   }
 
@@ -46,6 +159,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     private labelsPane: HTMLElement | undefined;
     private layerControl: L.Control.Layers | undefined;
     private datetimeTextbox: Textbox | undefined = undefined;
+    private slider: BomSlider | undefined;
 
     constructor(map: L.Map, name: string, options: object) {
       super(map, name, options);
@@ -97,9 +211,8 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       leafletStyle += `.leaflet-pane .leaflet-labels-pane { z-index: ${this.labelsZIndex} !important; }`
       leafletStyle += `.leaflet-pane .leaflet-radar-pane { z-index: ${this.radarZIndex} !important; }`
 
-      style.textContent = maplibreglstyles + leafletStyle;
+      style.textContent = maplibreglstyles + leafletStyle + noUiSliderStyles + styles;
     }
-
 
     createDatetimeTextbox(): Textbox {
       const textbox = new Textbox(
@@ -141,6 +254,19 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       await this.gl_map?.once('load');
     }
 
+    updateSlider(value: string | number) {
+      if (this.rainLayers.length == 0) return;
+
+      let currLayer = this.rainLayers[this.currentIndex];
+      console.log(currLayer, value, this.rainLayers);
+      this.setRainLayerOpacity(currLayer.id, 0.0);
+      this.currentIndex = Math.round(value as number);
+      currLayer = this.rainLayers[this.currentIndex];
+      console.log(currLayer);
+      this.setRainLayerOpacity(currLayer.id, 0.8);
+      this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+    }
+
     async renderMap() {
 
       if (this.enableLayerControl === true) {
@@ -170,6 +296,10 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.map.on('overlayadd', this.handleOverlayAdd);
       this.debug("Called render()");
       await this.updateAndStartCycle();
+      this.slider = new BomSlider(this.map, this.rainLayers.length - 1, (value) => {
+        this.updateSlider(value);
+      });
+      this.slider.setData(this.rainLayers);
     }
 
     async updateAndStartCycle() {
@@ -198,6 +328,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       const rainData = await this.fetchRainData();
 
       await this.loadRainLayers(rainData);
+      this.slider?.setData(this.rainLayers);
 
       this.updateActive = false;
 
@@ -206,10 +337,10 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.setRainLayerOpacity(currLayer.id, 0.8);
       this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
 
-      this.debug("Beginning layer cycle");
-      this.cycleTimeoutHandler = setTimeout(() => {
-        this.cycleRainLayer();
-      }, this.cycleTimeInterval);
+      // this.debug("Beginning layer cycle");
+      // this.cycleTimeoutHandler = setTimeout(() => {
+      //   this.cycleRainLayer();
+      // }, this.cycleTimeInterval);
 
       this.fetchTimeoutHandler = setTimeout(() => { this.updateAndStartCycle(); }, this.updateFetchInterval)
     }
@@ -361,13 +492,13 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         this.rainLayers = rainLayers;
         this.currentIndex = 0;
       }
-
     }
 
     destroy() {
       this.debug("Called destroy() of plugin:", this.name);
       clearTimeout(this.fetchTimeoutHandler);
       clearTimeout(this.cycleTimeoutHandler);
+      this.slider?.destroy();
     }
 
   }
