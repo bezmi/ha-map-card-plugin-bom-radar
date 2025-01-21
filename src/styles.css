@@ -1,0 +1,20 @@
+
+.slider-wrapper {
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 0.15fr 0.7fr 0.15fr;
+    width: 100%;
+    height: 10%;
+    position: absolute;
+    bottom: 30%;
+}
+.bom-slider {
+    grid-column: 2 / 3;
+}
+
+.bom-slider .noUi-tooltip {
+    display: none;
+}
+.bom-slider .noUi-active .noUi-tooltip {
+    display: block;
+}
