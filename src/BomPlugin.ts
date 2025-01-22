@@ -121,7 +121,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     handleOverlayRemove = (e: L.LayersControlEvent) => {
       if (e.name === "Rainfall") {
         this.debug("stopping radar service");
-        this.datetimeTextbox?.remove();
+        if (this.datetimeTextbox !== undefined) {
+          this.datetimeTextbox?.remove();
+        }
         clearTimeout(this.cycleTimeoutHandler);
         clearTimeout(this.fetchTimeoutHandler);
         this.rainSourceLayerMap.clear();
@@ -151,7 +153,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     }
 
     async initGL() {
-      // this.datetimeTextbox = this.createDatetimeTextbox();
+      if (!this.enableSlider) {
+        this.datetimeTextbox = this.createDatetimeTextbox();
+      }
 
       this.gl_map = this.gl?.getMaplibreMap();
       await this.gl_map?.once('load');
@@ -165,7 +169,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.currentIndex = Math.round(value as number);
       currLayer = this.rainLayers[this.currentIndex];
       this.setRainLayerOpacity(currLayer.id, 0.8);
-      this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+      if (this.datetimeTextbox !== undefined) {
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+      }
     }
 
     async renderMap() {
@@ -226,6 +232,16 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
       await this.loadRainLayers(rainData);
 
+
+      this.updateActive = false;
+
+      const currLayer = this.rainLayers[this.currentIndex];
+
+      this.setRainLayerOpacity(currLayer.id, 0.8);
+      if (this.datetimeTextbox !== undefined) {
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+      }
+
       if (this.enableSlider) {
         if (this.slider === undefined) {
           this.slider = new BomSlider(LL, this.map, this.rainLayers.length - 1, (value) => {
@@ -234,14 +250,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         } else {
           this.slider?.setData(this.rainLayers);
         }
+      } else {
+        this.cycleRainLayer();
       }
-
-      this.updateActive = false;
-
-      const currLayer = this.rainLayers[this.currentIndex];
-
-      this.setRainLayerOpacity(currLayer.id, 0.8);
-      this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
 
       this.fetchTimeoutHandler = setTimeout(() => { this.updateAndStartCycle(); }, this.updateFetchInterval)
     }
@@ -269,7 +280,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         this.currentIndex++;
       currLayer = this.rainLayers[this.currentIndex];
       this.setRainLayerOpacity(currLayer.id, 0.8);
-      this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+      if (this.datetimeTextbox !== undefined) {
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+      }
       this.cycleTimeoutHandler = setTimeout(() => {
         this.cycleRainLayer()
       }, this.cycleTimeInterval);
