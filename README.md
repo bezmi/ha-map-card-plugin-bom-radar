@@ -45,7 +45,10 @@ plugins:
 - **fetch_interval**: (default 30000) Time in milliseconds between each data retrieval from BoM.
 - **alternate_labels**: (default `false`) enable alternate labels for place names.
 Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png) if you enable this option.
-- **layer_control**: (default `true`) enable checkbox to allow showing/hiding the radar overlay.
+- **layer_control**: (default `true`) enable checkbox to allow showing/hiding the radar overlay and slider (if enabled).
+- **enable_slider**: (default `true`) enable the interactive slider make sure you read the [slider section below](#using-the-slider) so you know how it works!
+- **slider_timeout**: (default `5000`) after this many milliseconds without interaction, the slider will return to the neutral (center position).
+- **{something}_zIndex**: [see z-index section below](#z-index)
 
 #### z-index
 Setting these integer values in the configuration will alter how the different layers of the map are ordered.
@@ -55,6 +58,12 @@ For the labels setting to do anything, you must have the `alternate_labels` opti
 - **labels_zIndex**: (default 501) zIndex property for the labels
 - **radar_zIndex**: (default 201) zIndex property for the radar overlay
 - **marker_zIndex**: (default 401) zIndex property for the markers that you have on your map
+
+### Using the Slider
+It's simple.
+1. Click or tap anywhere on the slider, other than the handle to set the 'return point'
+2. Drag the handle somewhere and let it go. It will slowly move to the return point, animating the radar overlay as it does so.
+3. After `slider_timeout` (default `5000`) milliseconds of no user interaction, the handle will re-center.
 
 ---
 
