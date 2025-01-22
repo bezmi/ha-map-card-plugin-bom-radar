@@ -120,6 +120,8 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         clearTimeout(this.fetchTimeoutHandler);
         this.rainSourceLayerMap.clear();
         this.rainLayers = [];
+        this.slider?.destroy();
+        this.slider = undefined;
         this.currentIndex = 0;
       }
     }
@@ -187,10 +189,6 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.map.on('overlayadd', this.handleOverlayAdd);
       this.debug("Called render()");
       await this.updateAndStartCycle();
-      this.slider = new BomSlider(LL, this.map, this.rainLayers.length - 1, (value) => {
-        this.updateSlider(value);
-      });
-      this.slider.setData(this.rainLayers);
     }
 
     async updateAndStartCycle() {
@@ -219,7 +217,13 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       const rainData = await this.fetchRainData();
 
       await this.loadRainLayers(rainData);
-      this.slider?.setData(this.rainLayers);
+      if (this.slider === undefined) {
+        this.slider = new BomSlider(LL, this.map, this.rainLayers.length - 1, (value) => {
+          this.updateSlider(value);
+        }, this.rainLayers);
+      } else {
+        this.slider?.setData(this.rainLayers);
+      }
 
       this.updateActive = false;
 

@@ -1,7 +1,6 @@
 import noUiSlider from 'nouislider';
 import type L from 'leaflet';
 import type { API } from 'nouislider';
-import { PipsMode } from 'nouislider';
 import { RainLayer } from './types';
 
 
@@ -10,31 +9,35 @@ export class BomSlider {
   private sliderElement: HTMLElement;
   private onUpdate: (value: string | number) => void;
   private data: RainLayer[] = [];
-  private targetPosition: number = 18;
-  private resetTimeout: number | undefined;
+  private targetPosition: number;
+  private resetTimeoutHandler: number | undefined;
+  private animateIntervalHandler: number | undefined;
+  private defaultTargetPosition: number;
+  private resetTimeout: number;
+  private minTextElement: HTMLElement;
+  private maxTextElement: HTMLElement;
 
-  constructor(LL: typeof L, map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = []) {
+  constructor(LL: typeof L, map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = [], defaultTargetPosition: number | undefined = undefined, resetTimeout: number = 5000) {
     console.error("creating slider");
     const mapContainer = map.getContainer();
     const sliderContainer = LL.DomUtil.create('div', 'slider-wrapper', mapContainer);
     this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
-    this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
+    this.minTextElement = LL.DomUtil.create('div', 'bom-time-label-max', sliderContainer)
+    this.minTextElement.innerText = "+90min";
+    this.maxTextElement = LL.DomUtil.create('div', 'bom-time-label-min', sliderContainer)
+    this.maxTextElement.innerText = "-90min";
     this.onUpdate = onUpdate;
-
+    this.defaultTargetPosition = defaultTargetPosition ?? Math.floor(range / 2);
+    this.targetPosition = this.defaultTargetPosition;
+    this.resetTimeout = resetTimeout;
 
     this.slider = noUiSlider.create(this.sliderElement, {
-      start: 18,
+      start: this.defaultTargetPosition,
       connect: false,
       step: 0.1,
       range: {
         'min': 0,
         'max': range
-      },
-      pips: {
-        mode: PipsMode.Values,
-        values: [0, range],
-        density: 4,
-        stepped: true,
       },
       tooltips: [
         {
@@ -46,25 +49,24 @@ export class BomSlider {
       ],
       animate: false,
     });
-
+    this.data = initialData;
+    this.slider.set(this.defaultTargetPosition);
 
     // Attach slider update event
     this.slider.on('update', (values: (string | number)[]) => {
       const value = values[0];
       this.onUpdate(value);
     });
-    this.slider.on('change', (values: (string | number)[]) => {
-      clearTimeout(this.resetTimeout);
-      const value = parseFloat(values[0] as string);
-      this.targetPosition = Math.round(value);
-      this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
-    });
+    this.slider.on('change', this.onChange.bind(this));
     // On slider 'end' event, trigger the return animation
     // Called after the user finishes dragging the slider handle
     this.slider.on('start', () => {
-      clearTimeout(this.resetTimeout);
+      clearTimeout(this.resetTimeoutHandler);
+      // temporarily disable the change event so we can catch the 'end' event
       this.slider.off('change');
       this.slider.on('end', (values: (string | number)[]) => {
+        this.slider.on('change', this.onChange.bind(this));
+        clearTimeout(this.animateIntervalHandler);
         const currentValue = values[0] as number;
 
         // No need to move if we're already at the target
@@ -74,23 +76,17 @@ export class BomSlider {
         const direction = currentValue < this.targetPosition ? 1 : -1;
 
         // Use setInterval to "step" the slider value until it reaches the target
-        const intervalId = setInterval(() => {
+        this.animateIntervalHandler = setInterval(() => {
           let newValue = parseFloat(this.slider.get() as string) + direction * 0.1;
 
           // If moving up and we've exceeded the target, or moving down and we've gone below, stop
           if ((direction > 0 && newValue >= this.targetPosition) ||
             (direction < 0 && newValue <= this.targetPosition)) {
-            this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
+            this.resetTimeoutHandler = setTimeout(() => { this.onReset() }, this.resetTimeout);
             newValue = this.targetPosition; // Clamp to target
             this.slider.set(newValue);
-            clearInterval(intervalId);
+            clearInterval(this.animateIntervalHandler);
             this.slider.off("end");
-            this.slider.on('change', (values: (string | number)[]) => {
-              clearTimeout(this.resetTimeout);
-              const value = parseFloat(values[0] as string);
-              this.targetPosition = Math.round(value);
-              this.resetTimeout = setTimeout(() => { this.targetPosition = 18; this.slider.set(this.targetPosition); }, 5000);
-            });
           } else {
             this.slider.set(newValue);
           }
@@ -100,19 +96,31 @@ export class BomSlider {
     });
   }
 
+  onChange(values: (string | number)[]) {
+    console.error("change");
+    clearTimeout(this.resetTimeoutHandler);
+    clearInterval(this.animateIntervalHandler); // cancel any existing animation
+    const value = parseFloat(values[0] as string);
+    this.targetPosition = Math.round(value);
+    this.slider.set(this.targetPosition);
+    this.resetTimeoutHandler = setTimeout(() => { this.onReset(); }, this.resetTimeout);
+  }
+
+  onReset() {
+    this.targetPosition = this.defaultTargetPosition;
+    this.slider.set(this.targetPosition);
+  }
+
   setData(data: RainLayer[]) {
     this.data = data;
     console.error("DATA", data);
   }
 
-
-
   destroy() {
     console.error("removing slider");
     this.sliderElement.remove();
+    this.slider.destroy();
+    this.minTextElement.remove();
+    this.maxTextElement.remove();
   }
 }
-
-export function bomslider(LL: typeof L) {
-}
-
