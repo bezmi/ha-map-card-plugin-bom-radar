@@ -72,6 +72,15 @@ It's simple.
 If you find any issues or have suggestions, feel free to open an issue or submit a pull request on the [GitHub repository](https://github.com/bezmi/ha-map-card-plugin-bom-radar). Contributions welcome :)
 More features (scrollable timeline, select time range of data) are on their way.
 
+### Developing
+[Follow the instructions for building from source](#from-source-advanced).
+
+---
+
+## Thanks
+* @nathan-gs for [ha-map-card](https://github.com/nathan-gs/ha-map-card).
+* The Bureau of Meteorology for the data.
+
 ---
 
 ## License
