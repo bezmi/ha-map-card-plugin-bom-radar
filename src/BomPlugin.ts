@@ -51,6 +51,8 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     private layerControl: L.Control.Layers | undefined;
     private datetimeTextbox: Textbox | undefined = undefined;
     private slider: BomSlider | undefined;
+    private enableSlider: boolean = true;
+    private sliderTimeout: number = 5000;
 
     constructor(map: L.Map, name: string, options: object) {
       super(map, name, options);
@@ -75,6 +77,10 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
       this.labelsLayerGroup?.addTo(this.map);
       this.radarLayerGroup.addTo(this.map);
+
+      this.enableSlider = this.options["enable_slider"] ?? true;
+
+      this.sliderTimeout = this.options["slider_timeout"] ?? 5000;
 
 
       this.debug(`Successfully invoked constructor of plugin ${this.name} with options: ${this.options}`);
@@ -120,8 +126,12 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
         clearTimeout(this.fetchTimeoutHandler);
         this.rainSourceLayerMap.clear();
         this.rainLayers = [];
-        this.slider?.destroy();
-        this.slider = undefined;
+
+        if (this.slider !== undefined) {
+          this.slider?.destroy();
+          this.slider = undefined;
+        }
+
         this.currentIndex = 0;
       }
     }
@@ -151,11 +161,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       if (this.rainLayers.length == 0) return;
 
       let currLayer = this.rainLayers[this.currentIndex];
-      console.log(currLayer, value, this.rainLayers);
       this.setRainLayerOpacity(currLayer.id, 0.0);
       this.currentIndex = Math.round(value as number);
       currLayer = this.rainLayers[this.currentIndex];
-      console.log(currLayer);
       this.setRainLayerOpacity(currLayer.id, 0.8);
       this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
     }
@@ -217,12 +225,15 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       const rainData = await this.fetchRainData();
 
       await this.loadRainLayers(rainData);
-      if (this.slider === undefined) {
-        this.slider = new BomSlider(LL, this.map, this.rainLayers.length - 1, (value) => {
-          this.updateSlider(value);
-        }, this.rainLayers);
-      } else {
-        this.slider?.setData(this.rainLayers);
+
+      if (this.enableSlider) {
+        if (this.slider === undefined) {
+          this.slider = new BomSlider(LL, this.map, this.rainLayers.length - 1, (value) => {
+            this.updateSlider(value);
+          }, this.rainLayers, this.sliderTimeout);
+        } else {
+          this.slider?.setData(this.rainLayers);
+        }
       }
 
       this.updateActive = false;
@@ -231,11 +242,6 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
       this.setRainLayerOpacity(currLayer.id, 0.8);
       this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
-
-      // this.debug("Beginning layer cycle");
-      // this.cycleTimeoutHandler = setTimeout(() => {
-      //   this.cycleRainLayer();
-      // }, this.cycleTimeInterval);
 
       this.fetchTimeoutHandler = setTimeout(() => { this.updateAndStartCycle(); }, this.updateFetchInterval)
     }
@@ -393,7 +399,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       this.debug("Called destroy() of plugin:", this.name);
       clearTimeout(this.fetchTimeoutHandler);
       clearTimeout(this.cycleTimeoutHandler);
-      this.slider?.destroy();
+      if (this.slider !== undefined) {
+        this.slider?.destroy();
+      }
     }
 
   }

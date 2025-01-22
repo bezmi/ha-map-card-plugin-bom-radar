@@ -17,8 +17,7 @@ export class BomSlider {
   private minTextElement: HTMLElement;
   private maxTextElement: HTMLElement;
 
-  constructor(LL: typeof L, map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = [], defaultTargetPosition: number | undefined = undefined, resetTimeout: number = 5000) {
-    console.error("creating slider");
+  constructor(LL: typeof L, map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = [], resetTimeout: number = 5000, defaultTargetPosition: number | undefined = undefined) {
     const mapContainer = map.getContainer();
     const sliderContainer = LL.DomUtil.create('div', 'slider-wrapper', mapContainer);
     this.sliderElement = LL.DomUtil.create('div', 'bom-slider', sliderContainer);
@@ -52,20 +51,23 @@ export class BomSlider {
     this.data = initialData;
     this.slider.set(this.defaultTargetPosition);
 
-    // Attach slider update event
+    // call the supplied onUpdate function whenever the value changes
     this.slider.on('update', (values: (string | number)[]) => {
       const value = values[0];
       this.onUpdate(value);
     });
-    this.slider.on('change', this.onChange.bind(this));
-    // On slider 'end' event, trigger the return animation
-    // Called after the user finishes dragging the slider handle
+
+    // when the slider is tapped or clicked, set the maximum target position
+    this.slider.on('change', this.onChangeSetRange.bind(this));
+
+    // After the user stops dragging the slider, slowly move it back to the
+    // user defined target position.
     this.slider.on('start', () => {
       clearTimeout(this.resetTimeoutHandler);
       // temporarily disable the change event so we can catch the 'end' event
       this.slider.off('change');
       this.slider.on('end', (values: (string | number)[]) => {
-        this.slider.on('change', this.onChange.bind(this));
+        this.slider.on('change', this.onChangeSetRange.bind(this));
         clearTimeout(this.animateIntervalHandler);
         const currentValue = values[0] as number;
 
@@ -92,12 +94,10 @@ export class BomSlider {
           }
         }, 1000 / 100);
       });
-      // this.slider.off('end')``;
     });
   }
 
-  onChange(values: (string | number)[]) {
-    console.error("change");
+  onChangeSetRange(values: (string | number)[]) {
     clearTimeout(this.resetTimeoutHandler);
     clearInterval(this.animateIntervalHandler); // cancel any existing animation
     const value = parseFloat(values[0] as string);
@@ -113,11 +113,9 @@ export class BomSlider {
 
   setData(data: RainLayer[]) {
     this.data = data;
-    console.error("DATA", data);
   }
 
   destroy() {
-    console.error("removing slider");
     this.sliderElement.remove();
     this.slider.destroy();
     this.minTextElement.remove();
