@@ -170,7 +170,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       currLayer = this.rainLayers[this.currentIndex];
       this.setRainLayerOpacity(currLayer.id, 0.8);
       if (this.datetimeTextbox !== undefined) {
-        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleTimeString());
       }
     }
 
@@ -239,7 +239,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
       this.setRainLayerOpacity(currLayer.id, 0.8);
       if (this.datetimeTextbox !== undefined) {
-        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleTimeString());
       }
 
       if (this.enableSlider) {
@@ -281,7 +281,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       currLayer = this.rainLayers[this.currentIndex];
       this.setRainLayerOpacity(currLayer.id, 0.8);
       if (this.datetimeTextbox !== undefined) {
-        this.datetimeTextbox?.updateText(currLayer.time.toLocaleString());
+        this.datetimeTextbox?.updateText(currLayer.time.toLocaleTimeString());
       }
       this.cycleTimeoutHandler = setTimeout(() => {
         this.cycleRainLayer()
