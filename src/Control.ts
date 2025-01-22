@@ -16,6 +16,8 @@ export class BomSlider {
   private resetTimeout: number;
   private minTextElement: HTMLElement;
   private maxTextElement: HTMLElement;
+  private sliderStep: number;
+  private sliderAnimateTimeStep: number;
 
   constructor(LL: typeof L, map: L.Map, range: number, onUpdate: (value: string | number) => void, initialData: RainLayer[] = [], resetTimeout: number = 5000, defaultTargetPosition: number | undefined = undefined) {
     const mapContainer = map.getContainer();
@@ -30,10 +32,14 @@ export class BomSlider {
     this.targetPosition = this.defaultTargetPosition;
     this.resetTimeout = resetTimeout;
 
+    // TODO make these configurable?
+    this.sliderStep = 0.1;
+    this.sliderAnimateTimeStep = 1000 / 100;
+
     this.slider = noUiSlider.create(this.sliderElement, {
       start: this.defaultTargetPosition,
       connect: false,
-      step: 0.1,
+      step: this.sliderStep,
       range: {
         'min': 0,
         'max': range
@@ -79,7 +85,7 @@ export class BomSlider {
 
         // Use setInterval to "step" the slider value until it reaches the target
         this.animateIntervalHandler = setInterval(() => {
-          let newValue = parseFloat(this.slider.get() as string) + direction * 0.1;
+          let newValue = parseFloat(this.slider.get() as string) + direction * this.sliderStep;
 
           // If moving up and we've exceeded the target, or moving down and we've gone below, stop
           if ((direction > 0 && newValue >= this.targetPosition) ||
@@ -92,7 +98,7 @@ export class BomSlider {
           } else {
             this.slider.set(newValue);
           }
-        }, 1000 / 100);
+        }, this.sliderAnimateTimeStep); // TODO, make the time step configurable?
       });
     });
   }
