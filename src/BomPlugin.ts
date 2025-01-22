@@ -53,6 +53,7 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
     private slider: BomSlider | undefined;
     private enableSlider: boolean = true;
     private sliderTimeout: number = 5000;
+    private sliderHandleColor: string = "#FFF";
 
     constructor(map: L.Map, name: string, options: object) {
       super(map, name, options);
@@ -82,6 +83,8 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
 
       this.sliderTimeout = this.options["slider_timeout"] ?? 5000;
 
+      this.sliderHandleColor = this.options["slider_handle_color"] ?? "#FFF";
+
 
       this.debug(`Successfully invoked constructor of plugin ${this.name} with options: ${this.options}`);
     }
@@ -108,7 +111,9 @@ export default function(LL: typeof L, pluginBase: typeof Plugin, Logger: any) {
       leafletStyle += `.leaflet-pane .leaflet-labels-pane { z-index: ${this.labelsZIndex} !important; }`
       leafletStyle += `.leaflet-pane .leaflet-radar-pane { z-index: ${this.radarZIndex} !important; }`
 
-      style.textContent = maplibreglstyles + leafletStyle + noUiSliderStyles + styles;
+      let customSliderStyle = `.noUi-handle { background: ${this.sliderHandleColor}; }`
+
+      style.textContent = maplibreglstyles + leafletStyle + noUiSliderStyles + styles + customSliderStyle;
     }
 
     createDatetimeTextbox(): Textbox {

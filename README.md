@@ -48,6 +48,7 @@ Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.c
 - **layer_control**: (default `true`) enable checkbox to allow showing/hiding the radar overlay and slider (if enabled).
 - **enable_slider**: (default `true`) enable the interactive slider if `true`. Make sure you read the [slider section below](#using-the-slider) so you know how it works! Setting this to `false` will disable the slider and instead cycle the radar layers through time automatically, and a timestamp will be shown in the bottom left corner.
 - **slider_timeout**: (default `5000`) after this many milliseconds without interaction, the slider will return to the neutral (center position).
+- **slider_handle_color**: (default `#FFF`) The color for the slider handle. You can use any format of color string that works with css.
 - **{something}_zIndex**: [see z-index section below](#z-index)
 
 #### z-index

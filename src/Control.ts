@@ -114,7 +114,9 @@ export class BomSlider {
 
   onReset() {
     this.targetPosition = this.defaultTargetPosition;
+    this.slider.updateOptions({ animate: true }, false);
     this.slider.set(this.targetPosition);
+    this.slider.updateOptions({ animate: false }, false);
   }
 
   setData(data: RainLayer[]) {
