@@ -11,7 +11,7 @@ Make sure you have [ha-map-card](https://github.com/nathan-gs/ha-map-card) insta
 
 ### via HACS
 
-Click the badge below!
+Click the badge below.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bezmi&repository=ha-map-card-plugin-bom-radar&category=plugin)
 
@@ -37,6 +37,10 @@ and place it in your homeassistant `www` folder.
 
 Below is an example Lovelace YAML configuration that I like to use.
 
+If you installed via HACS, then the URL should be `/local/community/ha-map-card-plugin-bom-radar/bom-plugin.js`.
+
+If you installed manually and put it into the `www` folder, then use `/local/bom-plugin.js`.
+
 ```yaml
 type: custom:map-card
 x: -25.3744
@@ -45,7 +49,7 @@ zoom: 4
 tile_layer_url: https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png
 plugins:
   - name: bom
-    url: /local/bom-plugin.js # if the plugin is the www folder, this is the url to use
+    url: /local/community/ha-map-card-plugin-bom-radar/bom-plugin.js
     options:
       alternate_labels: true
 ```
