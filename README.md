@@ -41,24 +41,29 @@ plugins:
 - **url**: location where `bom-plugin.js` can be found. If it's in the `www` folder, then use `local/bom-plugin.js`
 
 ### Plugin configuration
-- **cycle_interval**: (default 250) Time in milliseconds between radar image frames cycling.
-- **fetch_interval**: (default 30000) Time in milliseconds between each data retrieval from BoM.
-- **alternate_labels**: (default `false`) enable alternate labels for place names.
-Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png) if you enable this option.
-- **layer_control**: (default `true`) enable checkbox to allow showing/hiding the radar overlay and slider (if enabled).
-- **enable_slider**: (default `true`) enable the interactive slider if `true`. Make sure you read the [slider section below](#using-the-slider) so you know how it works! Setting this to `false` will disable the slider and instead cycle the radar layers through time automatically, and a timestamp will be shown in the bottom left corner.
-- **slider_timeout**: (default `5000`) after this many milliseconds without interaction, the slider will return to the neutral (center position).
-- **slider_handle_color**: (default `#FFF`) The color for the slider handle. You can use any format of color string that works with css.
-- **{something}_zIndex**: [see z-index section below](#z-index)
+
+| Property             | Default  | Description                                                                                                                                                                                        |
+|----------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cycle_interval`   | 250      | Time in milliseconds between radar image frames cycling.                                                                                                                                           |
+| `fetch_interval`   | 30000    | Time in milliseconds between each data retrieval from BoM.                                                                                                                                          |
+| `alternate_labels` | `false`    | Enable alternate labels for place names. Useful as they draw over the radar. Use a [blank basemap](https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png) if you enable this option. |
+| `layer_control`    | `true`     | Enable checkbox to allow showing/hiding the radar overlay and slider (if enabled).                                                                                                                 |
+| `enable_slider`    | `true`     | Enable the interactive slider if `true`. Make sure you read the [slider section below](#using-the-slider) so you know how it works! Setting this to false will disable the slider and instead cycle the radar layers through time automatically, and a timestamp will be shown in the bottom left corner. |
+| `slider_timeout`   | 5000     | After this many milliseconds without interaction, the slider will return to the neutral (center position).                                                                                         |
+| `slider_handle_color` | `#FFF`  | The color for the slider handle. You can use any format of color string that works with CSS.                                                                                                       |
+| `{something}_zIndex` | see below      | [See z-index section below](#z-index)                                                                                                                                                              |
 
 #### z-index
 Setting these integer values in the configuration will alter how the different layers of the map are ordered.
 The lower the value, the lower the layer will be in the stack.
 With the current defaults, the order (lowest to highest) is radar -> markers -> labels, which works well.
 For the labels setting to do anything, you must have the `alternate_labels` option set to `true`.
-- **labels_zIndex**: (default 501) zIndex property for the labels
-- **radar_zIndex**: (default 201) zIndex property for the radar overlay
-- **marker_zIndex**: (default 401) zIndex property for the markers that you have on your map
+
+| Property          | Default | Description                                     |
+|-------------------|---------|-------------------------------------------------|
+| `labels_zIndex` | 501     | zIndex property for the alternate labels (if enabled)                  |
+| `radar_zIndex`  | 201     | zIndex property for the radar overlay           |
+| `marker_zIndex` | 401     | zIndex property for the markers that you have on your map. By default, they show below the alternate place labels but above the radar overlay|
 
 ### Using the Slider
 It's simple.
