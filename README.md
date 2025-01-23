@@ -7,13 +7,25 @@ A plugin for [ha-map-card](https://github.com/nathan-gs/ha-map-card) that displa
 ![an example of the map with rain radar shown](/images/screenshot.png)
 
 ## Installation
-Install `ha-map-card`. For now, this only works with an experimental version that has plugin support: https://github.com/nathan-gs/ha-map-card/pull/113
+Make sure you have [ha-map-card](https://github.com/nathan-gs/ha-map-card) installed.
 
-### Releases
+### via HACS
+
+Click the badge below!
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bezmi&repository=ha-map-card-plugin-bom-radar&category=plugin)
+
+#### Manually adding the repository to HACS
+1. Click the three dots on the top right of the HACS panel in home assistant, select `custom repositories`.
+2. Paste `https://github.com/bezmi/ha-map-card-plugin-bom-radar`, select `Dashboard` as the type.
+3. Now you can search for `map-card-plugin-bom-radar` and install it.
+
+### Manual installation
+#### Github releases
 [Download the latest release]("https://github.com/bezmi/ha-map-card-plugin-bom-radar/releases/latest")
 and place it in your homeassistant `www` folder.
 
-### From source (advanced)
+#### From source (advanced)
 1. Clone or download this repository.
 2. Install the plugin dependencies: `npm install`
 3. Build: `npm run build`
