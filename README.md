@@ -37,9 +37,9 @@ and place it in your homeassistant `www` folder.
 
 Below is an example Lovelace YAML configuration that I like to use.
 
-If you installed via HACS, then the URL should be `/local/community/ha-map-card-plugin-bom-radar/bom-plugin.js`.
+If you installed manually and put it into the `www` folder, then use `/local/bom-plugin.js` for the url config parameter.
 
-If you installed manually and put it into the `www` folder, then use `/local/bom-plugin.js`.
+If installed via HACS, then use the `hacs` config parameters `module` and `file`. This has the benefit of caching and faster plugin loading.
 
 ```yaml
 type: custom:map-card
@@ -48,13 +48,15 @@ y: 133.7751
 zoom: 4
 tile_layer_url: https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png
 plugins:
-  - name: bom
-    url: /local/community/ha-map-card-plugin-bom-radar/bom-plugin.js
+  - name: bom # a friendly name for this plugin instance
+    ## only use url if installed manually
+    # url: /local/bom-plugin.js
+    hacs:
+      module: ha-map-card-plugin-bom-radar
+      file: bom-plugin.js
     options:
       alternate_labels: true
 ```
-- **name**: a name for the plugin instance
-- **url**: location where `bom-plugin.js` can be found. If it's in the `www` folder, then use `local/bom-plugin.js`
 
 ### Plugin configuration
 
